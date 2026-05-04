@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Datasets, model artefacts, downloads — DO NOT COMMIT
+shared_data/raw/
+shared_data/processed/
+shared_data/graph/
+shared_data/images/
+shared_data/model_outputs/
+shared_data/evaluation/
+
+# Beauty / cross-domain workspaces
+CMGDR_beauty/
+hf_cache/
+
+# Common heavy file types
+*.pt
+*.pth
+*.ckpt
+*.npy
+*.npz
+*.parquet
+*.sqlite
+*.gz
+
+# Run outputs / logs
+*.log
+*.jsonl
+new_results/checkpoints/
+new_results/logs/
+new_results/*.json
+new_results/*.csv
+new_results/*.jsonl
+baseline_log*.txt
+evaluation_log.txt
+new_baseline_run.log
+
+# LaTeX build artefacts
+*.aux
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+report/CMGDR_report.log
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp

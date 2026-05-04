@@ -1,0 +1,13 @@
+# Engineering optimization configuration
+# All experiment definitions are in the run_*.py scripts
+# This file provides shared defaults
+
+base_config: "../../module_B/config/model.yaml"
+
+output_dir: "../../shared_data/evaluation/metrics"
+
+# Default experiment parameters
+defaults:
+  seed: 42
+  use_loo: true
+  device: "auto"

@@ -1,0 +1,11 @@
+upstream:
+  data_root: "../../shared_data"
+  item_parquet: "processed/item_multimodal.parquet"
+  item_id_map: "processed/item_id_map.json"
+
+text:
+  model_name: "all-MiniLM-L6-v2"
+  batch_size: 256
+  max_review_len: 256
+  max_reviews_per_item: 5
+  output_path: "../../shared_data/processed/item_text_embeddings.npy"

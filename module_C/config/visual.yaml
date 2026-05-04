@@ -1,0 +1,43 @@
+# Visual Modality Lead — pipeline configuration
+# Upstream: Module A output (shared_data)
+
+upstream:
+  data_root: "."
+  item_parquet: "processed/item_multimodal.parquet"
+  item_id_map: "processed/item_id_map.json"
+
+download:
+  output_dir: "images"
+  manifest_path: "images/download_manifest.json"
+  max_workers: 16
+  timeout_sec: 10
+  max_retries: 3
+  retry_delay_sec: 1.0
+  min_image_bytes: 500
+  user_agent: "Mozilla/5.0 (CMGDR Academic Research)"
+
+extract:
+  model_name: "vit_b_16"
+  weights: "IMAGENET1K_V1"
+  image_size: 224
+  batch_size: 128
+  device: "auto"
+  output_path: "processed/item_visual_embeddings.npy"
+  normalize: true
+  fill_strategy: "mean"   # zero / mean
+
+cluster:
+  num_clusters: 32
+  method: "kmeans"
+  n_init: 10
+  random_state: 42
+  output_clusters: "processed/item_visual_clusters.csv"
+  output_prototypes: "processed/cluster_prototypes.npy"
+  output_summary: "processed/cluster_summary.json"
+
+qa:
+  output_report: "processed/visual_qa_report.json"
+  tsne_sample_size: 5000
+  tsne_perplexity: 30
+  output_tsne_plot: "processed/tsne_visual_embeddings.png"
+  output_cluster_dist_plot: "processed/cluster_distribution.png"

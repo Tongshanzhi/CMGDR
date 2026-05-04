@@ -1,0 +1,72 @@
+data_root: "../shared_data"
+category: "Sports_and_Outdoors"
+visual_feature_path: "../shared_data/processed/item_visual_embeddings.npy"
+visual_cluster_path: "../shared_data/processed/item_visual_clusters.csv"
+text_feature_path: "../shared_data/processed/item_text_embeddings.npy"
+item_item_graph_path: "../shared_data/graph/edges_item_copurchase.parquet"
+use_item_item_graph: true
+
+checkpoint_dir: "../shared_data/model_outputs/checkpoints"
+result_dir: "../shared_data/evaluation/metrics"
+log_dir: "../shared_data/model_outputs/logs"
+artifact_dir: "../shared_data/model_outputs/artifacts"
+
+embedding_dim: 128
+num_layers: 3
+negatives_per_pos: 1
+batch_size: 2048
+num_epochs: 20
+eval_every: 1
+learning_rate: 0.001
+weight_decay: 0.000001
+device: "auto"
+candidate_batch_size: 256
+topk:
+  - 10
+  - 20
+
+stratified_sampling: true
+debias_mode: "full"
+num_visual_clusters: 32
+cluster_probe_test_ratio: 0.2
+cluster_probe_max_iter: 300
+
+loss_weights:
+  residual: 1.0
+  adversarial: 0.01
+  counterfactual: 0.5
+  orthogonality: 0.1
+  contrastive: 0.1
+  contrastive_temperature: 0.2
+  text_consistency: 0.05
+
+ablation_modes:
+  - "lightgcn"
+  - "visual_concat"
+  - "residual"
+  - "adversarial"
+  - "counterfactual"
+  - "residual_adv"
+  - "full"
+
+sensitivity:
+  visual_clusters:
+    - 16
+    - 32
+    - 64
+  loss_profiles:
+    light:
+      residual: 0.5
+      adversarial: 0.1
+      counterfactual: 0.25
+      orthogonality: 0.05
+    medium:
+      residual: 1.0
+      adversarial: 0.2
+      counterfactual: 0.5
+      orthogonality: 0.1
+    heavy:
+      residual: 2.0
+      adversarial: 0.4
+      counterfactual: 1.0
+      orthogonality: 0.2

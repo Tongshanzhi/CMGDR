@@ -1,0 +1,39 @@
+# Direction 1: Causal debiased MM-GNN — Amazon (Clothing or Sports)
+# 数据集：Amazon Reviews 2023，类目可选 Clothing_Shoes_and_Jewelry / Sports_and_Outdoors
+# 数据下载与说明：https://amazon-reviews-2023.github.io/
+
+dataset:
+  # Amazon Reviews 2023 (5-core)；下载与字段说明请参考 https://amazon-reviews-2023.github.io/
+  category: "Sports_and_Outdoors"
+  # 可选: "Clothing_Shoes_and_Jewelry"
+  base_url: "https://amazon-reviews-2023.github.io/"
+
+paths:
+  raw_dir: "raw"
+  processed_dir: "processed"
+  graph_dir: "graph"
+
+preprocess:
+  k_core_users: 5
+  k_core_items: 5
+  min_rating: 1
+  max_reviews_per_user: 0  # 0 = 不截断
+  require_review_text: false  # true 时丢弃无 reviewText 的交互（文本模态更干净）
+
+split:
+  # 按时间划分：早期交互构图/训练，末期留出验证与测试（符合序列与因果设定）
+  val_ratio: 0.1
+  test_ratio: 0.1
+  time_column: "unixReviewTime"
+
+graph:
+  # 同构图节点编码：user_id ∈ [0, n_users-1], item_id → offset 后 ∈ [n_users, n_users+n_items-1]
+  store_parquet: true
+  store_npz: true
+  store_sqlite: true
+  # 从 meta 的 also_buy 导出共购 Item-Item 边（两端正样本均须在过滤后的物品集合内）
+  export_item_item_copurchase: true
+
+download:
+  chunk_size: 1048576
+  timeout_sec: 120
