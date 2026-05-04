@@ -119,12 +119,3 @@ Two families of metrics are reported:
 - **Recommendation accuracy** — Recall@K, NDCG@K, HR@K, MRR (K = 10, 20).
 - **Debiasing effectiveness** — exposure gap, calibration gap, cluster probe
   accuracy, and counterfactual score shift under visual-style intervention.
-
-## Citation
-
-If you build on this code, please cite the Amazon Reviews 2023 release that
-provides the underlying interaction and metadata corpus:
-
-> Hou, Y., Li, J., He, Z., Yan, A., Chen, X., McAuley, J.
-> *Bridging Language and Items for Retrieval and Recommendation.*
-> arXiv:2403.03952, 2024.
