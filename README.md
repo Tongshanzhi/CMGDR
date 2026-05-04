@@ -9,8 +9,8 @@ causal model `U → I → Y ← V` with backdoor adjustment.
 On Amazon Reviews 2023 — Sports & Outdoors (5-core, 35,598 users / 18,357 items
 / 296,337 interactions), the full configuration improves Recall@10 by **28.4 %**
 over LightGCN while reducing the visual exposure gap and counterfactual score
-shift versus standard multimodal baselines. See `report/CMGDR_report.pdf` and
-`CMGDR_Evaluation_Report.md` for the full evaluation.
+shift versus standard multimodal baselines. See `report/CMGDR_report.pdf` for
+the full evaluation.
 
 ## Project layout
 
