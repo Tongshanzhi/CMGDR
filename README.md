@@ -1,93 +1,130 @@
 # CMGDR: Causality-aware Multimodal Graph Debiased Recommendation
 
-基于因果去偏的多模态图神经网络推荐系统
+A multimodal graph recommender that uses **causal debiasing** to lift accuracy
+without amplifying visual bias. CMGDR is built on a LightGCN backbone and
+combines four modalities — user-item interactions, ViT-B/16 visual embeddings,
+SBERT text embeddings, and an item-item co-purchase graph — under a structural
+causal model `U → I → Y ← V` with backdoor adjustment.
 
-## 项目结构
+On Amazon Reviews 2023 — Sports & Outdoors (5-core, 35,598 users / 18,357 items
+/ 296,337 interactions), the full configuration improves Recall@10 by **28.4 %**
+over LightGCN while reducing the visual exposure gap and counterfactual score
+shift versus standard multimodal baselines. See `report/CMGDR_report.pdf` and
+`CMGDR_Evaluation_Report.md` for the full evaluation.
+
+## Project layout
 
 ```
 CMGDR/
-├── shared_data/              # 模块间共享数据（统一接口）
-│   ├── raw/                  # 原始 Amazon 数据
-│   ├── processed/            # 预处理后的交互表、特征嵌入、聚类
-│   ├── graph/                # 图存储（边表、邻接矩阵）
-│   ├── images/               # 下载的商品图片
-│   ├── model_outputs/        # 模型 checkpoint 与训练日志
+├── shared_data/              # shared data exchanged across stages (created at runtime)
+│   ├── raw/                  # downloaded Amazon reviews & metadata
+│   ├── processed/            # cleaned interactions, features, clusters
+│   ├── graph/                # edge tables, adjacency matrices
+│   ├── images/               # downloaded product images
+│   ├── model_outputs/        # trained checkpoints and training logs
 │   │   ├── checkpoints/
 │   │   └── logs/
-│   └── evaluation/           # 评估结果
+│   └── evaluation/           # metrics and bias tables
 │       ├── metrics/
 │       └── bias_tables/
 │
-├── module_A/                 # 成员 A: 数据工程
-├── module_B/                 # 成员 B: 模型设计与因果模块
-├── module_C/                 # 成员 C: 多模态特征与图结构
-├── module_D/                 # 成员 D: 文本建模与实验分析
-└── module_E/                 # 成员 E: 工程优化
+├── module_A/                 # data engineering: download, clean, k-core, split, graph build
+├── module_B/                 # model: LightGCN backbone + causal debiasing, training, ablations
+├── module_C/                 # visual: image download, ViT-B/16 features, KMeans prototypes
+├── module_D/                 # text & evaluation: SBERT embeddings, ranking metrics, bias probes
+├── module_E/                 # optimization: hyper-parameter search, multi-phase experiments
+├── new_results/              # additional Section-7 experiment drivers and analysis scripts
+└── report/                   # LaTeX paper and figures
 ```
 
-## 数据集
+## Dataset
 
-本项目使用 **Amazon Reviews 2023** 数据集（5-core），类目示例：`Sports_and_Outdoors` / `Clothing_Shoes_and_Jewelry` / `Beauty_and_Personal_Care` 等。
+This project uses **Amazon Reviews 2023** (5-core) — example categories:
+`Sports_and_Outdoors`, `Clothing_Shoes_and_Jewelry`, `Beauty_and_Personal_Care`.
 
-- 数据下载与字段说明：<https://amazon-reviews-2023.github.io/>
+- Download and field documentation: <https://amazon-reviews-2023.github.io/>
 
-请从上述地址下载评论文件与商品元数据，置于 `shared_data/raw/`，再运行 `module_A/run.py --step all` 完成清洗、ID 重编号、时间划分与图构建。
+Place the downloaded reviews + metadata gzipped JSONL files under
+`shared_data/raw/`, then run `module_A/run.py --step all` to perform cleaning,
+ID re-indexing, temporal split, and graph construction.
 
-> 仓库中**不包含**任何原始数据、预处理产物、商品图片或模型 checkpoint。`shared_data/` 目录的子文件夹（`raw/`、`processed/`、`graph/`、`images/`、`model_outputs/`、`evaluation/`）均会在运行各模块脚本时按需生成。
+> The repository contains **source code only**. Raw datasets, preprocessed
+> artefacts, downloaded product images, model checkpoints, and experiment
+> outputs are excluded via `.gitignore` — every subdirectory under
+> `shared_data/` is generated on demand by the module pipelines.
 
-## 模块分工
+## End-to-end pipeline
 
-| 模块 | 负责人 | 职责 |
-|------|--------|------|
-| **Module A** | 成员 A | 数据下载、清洗、K-core 过滤、时间划分、图构建 |
-| **Module B** | 成员 B | CMGDR 模型（LightGCN + 因果去偏）、训练、消融实验 |
-| **Module C** | 成员 C | 图片下载、ViT 视觉特征提取、KMeans 聚类、QA |
-| **Module D** | 成员 D | 文本嵌入提取、模型评估、偏差分析 |
-| **Module E** | 成员 E | 超参优化、多阶段实验、可视化 |
-
-## 运行顺序
+The five modules form a single pipeline:
 
 ```
-Module A → Module C → Module D(文本) → Module B → Module D(评估) → Module E
+module_A → module_C → module_D (text) → module_B → module_D (eval) → module_E
 ```
 
-### 端到端运行
+Reproducing the headline numbers from a clean clone:
 
 ```bash
-# Step 1: 数据预处理
+# Step 1 — data preprocessing & graph construction
 cd module_A && python run.py --step all && cd ..
 
-# Step 2: 视觉特征提取与聚类
+# Step 2 — visual feature extraction & KMeans clustering
 cd module_C && python run.py --step all && cd ..
 
-# Step 3: 文本特征提取
+# Step 3 — text feature extraction
 cd module_D && python run_text.py && cd ..
 
-# Step 4: 模型训练
+# Step 4 — train CMGDR (and optional baselines)
 cd module_B && python run_train.py --seed 42 && cd ..
 
-# Step 5: 模型评估
+# Step 5 — evaluation (sampled 1+999 LOO + bias diagnostics)
 cd module_D && python run_eval.py --split test --seed 42 && cd ..
 
-# Step 6: 超参优化（可选）
+# Step 6 — hyper-parameter optimisation (optional)
 cd module_E && python run.py optimization && cd ..
 ```
 
-## 模块间数据接口
+Each module also has its own `README.md` with finer-grained instructions and
+its own `requirements.txt`.
 
-所有模块通过 `shared_data/` 目录交换数据，接口文件格式固定：
+## Inter-module data interface
 
-| 产出文件 | 格式 | 生产者 | 消费者 |
-|----------|------|--------|--------|
-| `processed/interactions.parquet` | Parquet | A | B, D |
-| `processed/item_multimodal.parquet` | Parquet | A | C, D |
-| `processed/item_id_map.json` | JSON | A | B, C, D |
-| `graph/edges_train.parquet` | Parquet | A | B |
-| `graph/graph_meta.json` | JSON | A | B |
-| `graph/edges_item_copurchase.parquet` | Parquet | A | B |
-| `processed/item_visual_embeddings.npy` | NumPy | C | B |
-| `processed/item_visual_clusters.csv` | CSV | C | B |
-| `processed/cluster_prototypes.npy` | NumPy | C | B |
-| `processed/item_text_embeddings.npy` | NumPy | D | B |
-| `model_outputs/checkpoints/*.pt` | PyTorch | B | D, E |
-| `evaluation/metrics/*.json` | JSON | D | E |
+Modules communicate exclusively through files in `shared_data/`. Formats are
+fixed so any module can be re-run independently as long as its inputs exist.
+
+| File | Format | Producer | Consumers |
+|------|--------|----------|-----------|
+| `processed/interactions.parquet`        | Parquet | module_A | module_B, module_D |
+| `processed/item_multimodal.parquet`     | Parquet | module_A | module_C, module_D |
+| `processed/item_id_map.json`            | JSON    | module_A | module_B, module_C, module_D |
+| `graph/edges_train.parquet`             | Parquet | module_A | module_B |
+| `graph/graph_meta.json`                 | JSON    | module_A | module_B |
+| `graph/edges_item_copurchase.parquet`   | Parquet | module_A | module_B |
+| `processed/item_visual_embeddings.npy`  | NumPy   | module_C | module_B |
+| `processed/item_visual_clusters.csv`    | CSV     | module_C | module_B |
+| `processed/cluster_prototypes.npy`      | NumPy   | module_C | module_B |
+| `processed/item_text_embeddings.npy`    | NumPy   | module_D | module_B |
+| `model_outputs/checkpoints/*.pt`        | PyTorch | module_B | module_D, module_E |
+| `evaluation/metrics/*.json`             | JSON    | module_D | module_E |
+
+## Evaluation protocol
+
+Following the standard protocol of MMGCN / LATTICE / BM3 / FREEDOM / MGCN /
+LGMRec / MENTOR, we use leave-one-out evaluation with sampled scoring
+(1 ground-truth positive + 999 random negatives per user). The chronologically
+last interaction of each user is held out for testing, the second-to-last for
+validation, and the rest for training.
+
+Two families of metrics are reported:
+
+- **Recommendation accuracy** — Recall@K, NDCG@K, HR@K, MRR (K = 10, 20).
+- **Debiasing effectiveness** — exposure gap, calibration gap, cluster probe
+  accuracy, and counterfactual score shift under visual-style intervention.
+
+## Citation
+
+If you build on this code, please cite the Amazon Reviews 2023 release that
+provides the underlying interaction and metadata corpus:
+
+> Hou, Y., Li, J., He, Z., Yan, A., Chen, X., McAuley, J.
+> *Bridging Language and Items for Retrieval and Recommendation.*
+> arXiv:2403.03952, 2024.
